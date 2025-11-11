@@ -87,6 +87,43 @@ LOG4JS_MODE=plain    node app.js
 
 ---
 
+## **Log Level Filtering**
+
+Control which log messages are displayed using the `LOG4JS_LEVEL` environment variable. Only messages at or above the specified level will be logged.
+
+**Log levels (from least to most verbose):**
+- `error` - Only errors
+- `warn` - Warnings and errors
+- `info` - Info, warnings, and errors (default)
+- `debug` - All messages
+
+**Example:**
+
+```bash
+# Only show warnings and errors
+LOG4JS_LEVEL=warn node app.js
+
+# Show all messages including debug
+LOG4JS_LEVEL=debug node app.js
+
+# Default: info level (if not specified)
+node app.js
+```
+
+**In code:**
+
+```ts
+const logger = log4js("MyApp");
+
+// With LOG4JS_LEVEL=warn
+logger.debug("Debug info");  // Not logged
+logger.info("Starting...");  // Not logged
+logger.warn("Low disk");     // Logged
+logger.error("Failed!");     // Logged
+```
+
+---
+
 ## **API Surface**
 
 The library intentionally exposes only the essentials:
