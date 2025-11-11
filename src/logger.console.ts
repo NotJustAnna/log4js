@@ -33,7 +33,7 @@ export class ConsoleLogger extends Logger {
    * @param level - The severity level of the log message
    * @param msg - The message to log
    */
-  log(level: LogLevel, msg: any): void;
+  protected logInternal(level: LogLevel, msg: any): void;
 
   /**
    * Logs a message with metadata to stdout.
@@ -42,7 +42,7 @@ export class ConsoleLogger extends Logger {
    * @param msg - The message string to log
    * @param meta - Additional metadata to include
    */
-  log(level: LogLevel, msg: string, meta: object): void;
+  protected logInternal(level: LogLevel, msg: string, meta: object): void;
 
   /**
    * Logs a message with optional metadata to stdout.
@@ -51,7 +51,7 @@ export class ConsoleLogger extends Logger {
    * @param msg - The message to log
    * @param meta - Optional metadata to include
    */
-  log(level: LogLevel, msg: any, meta?: object): void {
+  protected logInternal(level: LogLevel, msg: any, meta?: object): void {
     const now = new Date();
     const prefix = this.messagePrefix(level, now);
     if (typeof msg !== 'string') {

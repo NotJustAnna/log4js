@@ -1,4 +1,5 @@
-import { LogLevel } from './logger.level';
+import { LogLevel, parseLogLevel, shouldLog } from './logger.level';
+import * as process from 'process';
 
 /**
  * Abstract base class for all logger implementations.
@@ -8,15 +9,26 @@ import { LogLevel } from './logger.level';
  * Concrete implementations must provide the `log` method, while this class
  * provides convenience methods for each log level (info, warn, error, debug).
  * 
+ * Log level filtering is applied based on the LOG4JS_LEVEL environment variable.
+ * Only messages at or above the configured level will be logged.
+ * 
  * @public
  */
 export abstract class Logger {
+  /**
+   * The minimum log level to output, parsed from LOG4JS_LEVEL env var.
+   * Defaults to 'info' if not specified.
+   */
+  protected readonly minLevel: LogLevel;
+
   /**
    * Creates a new Logger instance.
    * 
    * @param name - The name/identifier for this logger instance
    */
-  protected constructor(readonly name: string) {}
+  protected constructor(readonly name: string) {
+    this.minLevel = parseLogLevel(process.env.LOG4JS_LEVEL);
+  }
 
   /**
    * Logs a message with the specified level.
@@ -26,8 +38,9 @@ export abstract class Logger {
    * 
    * @remarks
    * This is the core logging method that must be implemented by all concrete logger classes.
+   * The implementation should NOT perform level filtering - that is handled by this base class.
    */
-  abstract log(level: LogLevel, msg: any): void;
+  protected abstract logInternal(level: LogLevel, msg: any): void;
 
   /**
    * Logs a string message with metadata at the specified level.
@@ -36,7 +49,7 @@ export abstract class Logger {
    * @param msg - The message string to log
    * @param meta - Additional metadata to include with the log entry
    */
-  abstract log(level: LogLevel, msg: string, meta: object): void;
+  protected abstract logInternal(level: LogLevel, msg: string, meta: object): void;
 
   /**
    * Logs a message with optional metadata at the specified level.
@@ -45,7 +58,37 @@ export abstract class Logger {
    * @param msg - The message to log (can be any type)
    * @param meta - Optional metadata to include with the log entry
    */
-  abstract log(level: LogLevel, msg: any, meta?: object): void;
+  protected abstract logInternal(level: LogLevel, msg: any, meta?: object): void;
+
+  /**
+   * Logs a message with the specified level (with filtering).
+   * 
+   * @param level - The severity level of the log message
+   * @param msg - The message to log (can be any type)
+   */
+  log(level: LogLevel, msg: any): void;
+
+  /**
+   * Logs a string message with metadata at the specified level (with filtering).
+   * 
+   * @param level - The severity level of the log message
+   * @param msg - The message string to log
+   * @param meta - Additional metadata to include with the log entry
+   */
+  log(level: LogLevel, msg: string, meta: object): void;
+
+  /**
+   * Logs a message with optional metadata at the specified level (with filtering).
+   * 
+   * @param level - The severity level of the log message
+   * @param msg - The message to log (can be any type)
+   * @param meta - Optional metadata to include with the log entry
+   */
+  log(level: LogLevel, msg: any, meta?: object): void {
+    if (shouldLog(level, this.minLevel)) {
+      this.logInternal(level, msg, meta);
+    }
+  }
 
   /**
    * Logs an informational message.
