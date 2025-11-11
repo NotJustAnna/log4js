@@ -1,6 +1,6 @@
 import chalk, { Chalk } from 'chalk';
 import { dump } from 'js-yaml';
-import { highlight, Theme } from 'cli-highlight';
+import { highlight, plain, Theme } from 'cli-highlight';
 import { ConsoleLogger } from './logger.console';
 import { LogLevel } from './logger.level';
 
@@ -183,9 +183,10 @@ export class ColorfulConsoleLogger extends ConsoleLogger {
     type: chalk.magentaBright,
     built_in: chalk.magentaBright,
     comment: chalk.gray,
-    string: chalk.green,
     regexp: chalk.blueBright,
     literal: chalk.yellowBright,
+    number: chalk.blue,
+    string: plain,
   };
 
   /**
