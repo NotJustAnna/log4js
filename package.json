@@ -1,0 +1,23 @@
+{
+  "name": "@notjustanna/log4js",
+  "version": "1.0.1",
+  "main": "dist",
+  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "cli-highlight": "^2.1.11",
+    "js-yaml": "^4.1.0",
+    "lambda-log": "^3.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.5",
+    "@types/lambda-log": "^3.0.0",
+    "@types/node": "^18.15.11",
+    "rimraf": "^4.4.1",
+    "typescript": "^5.0.3"
+  },
+  "scripts": {
+    "build": "rimraf ./dist && tsc"
+  }
+}
