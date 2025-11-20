@@ -1,6 +1,5 @@
 import { Logger } from './logger';
 import { LogLevel } from './logger.level';
-import {LambdaLog} from 'lambda-log';
 
 let lambdaLog: any = null;
 let lambdaLogError: Error | null = null;
@@ -51,7 +50,7 @@ export class LambdaLogger extends Logger {
    * @param level - The severity level of the log message
    * @param msg - The message to log
    */
-  log(level: LogLevel, msg: any): void;
+  protected logInternal(level: LogLevel, msg: any): void;
 
   /**
    * Logs a message with metadata to AWS CloudWatch.
@@ -60,7 +59,7 @@ export class LambdaLogger extends Logger {
    * @param msg - The message string to log
    * @param meta - Additional metadata to include
    */
-  log(level: LogLevel, msg: string, meta: object): void;
+  protected logInternal(level: LogLevel, msg: string, meta: object): void;
 
   /**
    * Logs a message with optional metadata to AWS CloudWatch.
@@ -69,7 +68,7 @@ export class LambdaLogger extends Logger {
    * @param msg - The message to log
    * @param meta - Optional metadata to include
    */
-  log(level: LogLevel, msg: any, meta?: object): void {
+  protected logInternal(level: LogLevel, msg: any, meta?: object): void {
     if (lambdaLog) {
       if (typeof msg !== 'string') {
         const logMeta = meta === undefined ? { msg } : { msg, ...meta };
