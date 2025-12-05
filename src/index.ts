@@ -7,6 +7,15 @@ import { LambdaLogger } from './logger.lambda';
 import { FileLogger } from './logger.file';
 import { DelegateLogger } from './logger.delegate';
 
+export { Logger } from './logger';
+export { ConsoleLogger } from './logger.console';
+export { ColorfulConsoleLogger } from './logger.console.colorful';
+export { LambdaLogger } from './logger.lambda';
+export { FileLogger } from './logger.file';
+export { DelegateLogger } from './logger.delegate';
+export { TextBasedLogger } from './logger.text';
+export { LogLevel, shouldLog, parseLogLevel } from './logger.level';
+
 /**
  * Creates a logger instance with automatic environment detection.
  * 
