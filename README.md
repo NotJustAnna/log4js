@@ -9,6 +9,8 @@ Built with a minimal dependency surface (`chalk`, `cli-highlight`, `js-yaml`, `l
 ## **Features**
 
 * **Environment-aware** — auto-detects Lambda, colorful TTY, or plain mode
+* **File logging support** — log to files with `LOG4JS_FILE` or `LOG4JS_MODE=file`
+* **Multi-destination logging** — simultaneously log to console and file
 * **Structured logging** with predictable JSON/YAML-style metadata
 * **Magic `<hl>` and `<chalk>` tags** for inline syntax highlighting & styling
 * **Tiny footprint** — simple codebase, no heavy framework
@@ -73,9 +75,10 @@ logger.info("Query executed", {
 `log4js()` chooses the appropriate logger mode via:
 
 1. `LOG4JS_MODE` (forced override)
-2. AWS Lambda detection
-3. TTY + color support
-4. Fallback to plain mode
+2. `LOG4JS_FILE` (enables file logging)
+3. AWS Lambda detection
+4. TTY + color support
+5. Fallback to plain mode
 
 **Manual override:**
 
@@ -83,7 +86,30 @@ logger.info("Query executed", {
 LOG4JS_MODE=lambda   node app.js
 LOG4JS_MODE=colorful node app.js
 LOG4JS_MODE=plain    node app.js
+LOG4JS_MODE=file     node app.js  # logs to latest.log
 ```
+
+**File logging:**
+
+```bash
+# Log to a specific file (also outputs to console)
+LOG4JS_FILE=app.log node app.js
+
+# Use default file name (latest.log) and auto-detect console mode
+LOG4JS_MODE=file node app.js
+
+# Combine colorful console with file logging
+LOG4JS_MODE=colorful,file LOG4JS_FILE=app.log node app.js
+
+# Plain console + file logging
+LOG4JS_MODE=plain,file LOG4JS_FILE=debug.log node app.js
+```
+
+**How it works:**
+- When `LOG4JS_FILE` is set, a `FileLogger` is created alongside the console logger
+- When `LOG4JS_MODE` includes `file`, file logging is enabled (uses `latest.log` if `LOG4JS_FILE` not set)
+- Multiple logger instances share a single file handle to avoid opening multiple handles to the same file
+- File output is always plain text (no ANSI colors), even when console uses colorful mode
 
 ---
 
@@ -128,6 +154,8 @@ logger.error("Failed!");     // Logged
 
 The library intentionally exposes only the essentials:
 
+### **Logger Methods**
+
 ```ts
 logger.info(msg, meta?)
 logger.warn(msg, meta?)
@@ -137,6 +165,71 @@ logger.log(level, msg, meta?) // low-level escape hatch
 ```
 
 All functions/classes/BigInts/Errors in metadata are serialized safely.
+
+### **Factory Functions**
+
+```ts
+import { 
+  log4js,                     // Auto-detect environment
+  createConsoleLogger,        // Plain text console
+  createColorfulConsoleLogger, // Colorful console with highlighting
+  createLambdaLogger,         // AWS Lambda JSON format
+  createFileLogger            // File logging
+} from '@notjustanna/log4js';
+
+// Auto-detected logger
+const logger = log4js('MyApp');
+
+// Specific logger types
+const plainLogger = createConsoleLogger('Plain');
+const colorLogger = createColorfulConsoleLogger('Color');
+const lambdaLogger = createLambdaLogger('Lambda');
+const fileLogger = createFileLogger('File'); // Uses LOG4JS_FILE or latest.log
+```
+
+---
+
+## **Architecture**
+
+The library is built with a layered architecture:
+
+### **Logger Hierarchy**
+
+```
+Logger (abstract base)
+├── TextBasedLogger (abstract, shared text formatting)
+│   ├── ConsoleLogger (plain text to stdout)
+│   │   └── ColorfulConsoleLogger (with syntax highlighting)
+│   └── FileLogger (plain text to file)
+├── LambdaLogger (JSON format for CloudWatch)
+└── DelegateLogger (forwards to multiple loggers)
+```
+
+### **Key Components**
+
+- **Logger** - Abstract base class with level filtering and convenience methods
+- **TextBasedLogger** - Extracted common text formatting logic from ConsoleLogger
+- **ConsoleLogger** - Uses static `stdout` function (injectable for testing)
+- **FileLogger** - Uses static `writeFile` function, shares file handle logic
+- **DelegateLogger** - Forwards log calls to an array of loggers (enables multi-destination)
+- **ColorfulConsoleLogger** - Extends ConsoleLogger with color and highlighting
+
+### **Static Output Handling**
+
+Both `ConsoleLogger` and `FileLogger` use static output functions to avoid multiple handles:
+
+```ts
+// ConsoleLogger uses a static stdout
+ConsoleLogger.stdout = (msg) => console.log(msg);
+
+// FileLogger uses a static writeFile
+FileLogger.writeFile = (path, content) => fs.appendFileSync(path, content);
+```
+
+This design ensures:
+- Multiple logger instances can share the same output destination
+- Easy mocking/testing by replacing the static function
+- No file handle leaks or conflicts
 
 ---
 
@@ -178,4 +271,40 @@ export const handler = async (event, context) => {
     return { statusCode: 500, body: "Internal error" };
   }
 };
+```
+
+### File Logging
+
+```ts
+// Enable file logging via environment variable
+// LOG4JS_FILE=app.log node app.js
+
+const logger = log4js("MyApp");
+logger.info("This goes to both console and app.log");
+
+// Or create a file logger directly
+import { createFileLogger } from '@notjustanna/log4js';
+
+const fileLogger = createFileLogger("FileApp");
+fileLogger.info("This goes to latest.log (or LOG4JS_FILE if set)");
+```
+
+### Multi-Destination Logging
+
+```ts
+// LOG4JS_MODE=colorful,file LOG4JS_FILE=production.log node app.js
+
+const logger = log4js("WebServer");
+
+app.use((req, res, next) => {
+  logger.info("Request", {
+    method: req.method,
+    path: req.path,
+    ip: req.ip
+  });
+  // Logs to both:
+  // - Console (with colors)
+  // - production.log (plain text)
+  next();
+});
 ```
